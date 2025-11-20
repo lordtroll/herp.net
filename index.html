@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>herp.net</title>
+<style>
+  /* Base / layout */
+  :root{
+    --bg:#000;
+    --red:#ff0f0f;
+    --deep-red:#9b0000;
+    --muted:#8a8a8a;
+    --glass: rgba(0,0,0,0.45);
+  }
+  html,body{height:100%;margin:0;background:#000;font-family: "Segoe UI", Roboto, system-ui, -apple-system, "Helvetica Neue", Arial;}
+  body{
+    color:var(--red);
+    background:#000;
+    overflow:auto;
+    cursor: none; /* hide default */
+  }
+
+  /* background gif fullscreen */
+  .bg-fill{
+    position:fixed;inset:0;z-index:0;
+    background-image: url("blood.gif");
+    background-position:center;
+    background-repeat:no-repeat;
+    background-size: cover;
+    /* make the gif visible: increase brightness and remove overlay blending */
+    filter: contrast(120%) saturate(100%) brightness(100%);
+    transform-origin:center;
+    animation: slow-pulse 12s ease-in-out infinite;
+    /* mix-blend-mode: overlay;  <-- removed because overlay on black can hide image */
+    opacity: 0.96;
+  }
+  @keyframes slow-pulse{
+    0%{transform:scale(1) rotate(0deg);}
+    50%{transform:scale(1.02) rotate(-0.3deg);}
+    100%{transform:scale(1) rotate(0deg);}
+  }
+
+  /* canvas noise (above bg, below content) */
+  #noiseCanvas{
+    position:fixed; inset:0; z-index:2; pointer-events:none;
+    width:100%; height:100%;
+    opacity:0.06; /* subtle */
+  }
+
+  /* content container */
+  .wrap{
+    position:relative; z-index:5; max-width:980px; margin:48px auto; padding:36px; 
+    background: linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.55));
+    border-radius:14px; box-shadow: 0 12px 40px rgba(0,0,0,0.8), 0 0 40px rgba(155,0,0,0.06) inset;
+    border:1px solid rgba(200,0,0,0.06);
+    backdrop-filter: blur(6px);
+    overflow:hidden;
+  }
+
+  /* header / directory link at very top */
+  header{
+    display:flex;align-items:center;gap:12px;margin-bottom:20px;
+  }
+  .dir{
+    font-weight:700;font-size:18px;letter-spacing:1px;color:var(--red);text-decoration:none;
+    text-shadow: 0 0 8px rgba(255,0,0,0.18), 0 0 24px rgba(155,0,0,0.06);
+    position:relative;
+  }
+  .dir:after{
+    content:"";position:absolute;left:0;right:0;height:2px;bottom:-8px;background:linear-gradient(90deg,transparent,#ff3232,transparent);
+    filter:blur(6px);opacity:.7;
+  }
+
+  h1, h2, h3, p, a, li { color:var(--red); margin:0 0 14px 0; }
+  p{ color: #ff7b7b; font-size:18px;line-height:1.35; margin-bottom:12px; }
+  small{ color:var(--muted); display:block; margin-top:6px; font-size:12px; }
+
+  /* creepy "look at me" treatment */
+  .look-at-me{
+    display:inline-block;font-weight:800;font-size:22px;letter-spacing:0.8px;
+    transform-origin:center; position:relative;
+    text-shadow: 0 0 14px rgba(255,0,0,0.35), 0 0 28px rgba(150,0,0,0.08);
+    animation: wobble 3.6s ease-in-out infinite;
+    filter: drop-shadow(0 6px 14px rgba(155,0,0,0.25));
+  }
+  @keyframes wobble{
+    0%{transform: translateY(0) skewX(0) rotate(0)}
+    25%{transform: translateY(-6px) skewX(-4deg) rotate(-1deg)}
+    50%{transform: translateY(0) skewX(4deg) rotate(1deg)}
+    75%{transform: translateY(6px) skewX(-4deg) rotate(-0.5deg)}
+    100%{transform: translateY(0) skewX(0) rotate(0)}
+  }
+
+  .media{
+    display:flex;flex-direction:column;gap:22px;margin-top:10px;align-items:flex-start;
+  }
+  .media img{
+    max-width:320px;width:100%;height:auto;border-radius:8px;border:2px solid rgba(155,0,0,0.15);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.8), 0 0 30px rgba(155,0,0,0.05) inset;
+    animation: img-float 8s ease-in-out infinite;
+  }
+  @keyframes img-float{0%{transform:translateY(0)}50%{transform:translateY(-8px)}100%{transform:translateY(0)}}
+
+  .simple-list{list-style:none;padding:0;margin:8px 0 18px 0;}
+  .simple-list li{padding:8px 12px;background:linear-gradient(90deg, rgba(255,0,0,0.02), transparent);border-radius:6px;margin-bottom:8px;font-weight:600;}
+
+  .callout{
+    padding:14px;border-radius:12px;background:linear-gradient(180deg, rgba(60,0,0,0.18), rgba(0,0,0,0.18));
+    border:1px solid rgba(255,0,0,0.06); box-shadow: 0 8px 24px rgba(155,0,0,0.03) inset;
+  }
+
+  .glitch{
+    position:relative;display:inline-block;font-weight:900;
+  }
+  .glitch::before, .glitch::after{
+    content:attr(data-text);
+    position:absolute;left:0;top:0;opacity:0.8;
+    clip-path: polygon(0 0,100% 0,100% 40%,0 40%);
+  }
+  .glitch::before{color:#ff5b5b;transform:translate(2px,-1px)}
+  .glitch::after{color:#ff0f0f;transform:translate(-2px,1px);clip-path: polygon(0 60%,100% 60%,100% 100%,0 100%);}
+  .glitch{animation: glitchy 3s infinite;}
+  @keyframes glitchy{
+    0%{} 20%{transform:translateX(-1px)} 21%{transform:translateX(1px)} 40%{} 41%{transform:skewX(-2deg)} 42%{transform:skewX(2deg)} 60%{} 100%{}
+  }
+
+  footer{margin-top:18px;font-size:13px;color:var(--muted);opacity:.95;padding-top:10px;border-top:1px dashed rgba(155,0,0,0.06);}
+
+  /* custom cursor */
+  #blood-cursor{
+    position:fixed;z-index:9999;pointer-events:none;
+    width:40px;height:40px;
+    background:url("cursor.png") center/contain no-repeat;
+    transform:translate(-50%,-50%);
+  }
+
+  @media (max-width:640px){
+    .wrap{margin:20px;padding:18px;border-radius:8px;}
+    .media img{max-width:100%}
+  }
+
+  .drip{
+    position:absolute;left:-60px;top:20px;width:160px;height:160px;background: radial-gradient(circle at 30% 30%, rgba(200,0,0,0.6), rgba(80,0,0,0.2));
+    filter: blur(22px);opacity:.35;transform: rotate(-12deg);
+  }
+
+  .outline-glow{ text-shadow: 0 0 10px rgba(255,0,0,0.12), 0 0 30px rgba(155,0,0,0.05) }
+</style>
+</head>
+<body>
+
+  <!-- BACKGROUND GIF (make sure blood.gif exists in same folder) -->
+  <div class="bg-fill" aria-hidden="true"></div>
+
+  <!-- subtle noise canvas (optional; shader only runs if supported) -->
+  <canvas id="noiseCanvas"></canvas>
+
+  <div class="wrap">
+    <div class="drip"></div>
+
+    <header>
+     <span class="dir">https://www.herp.net/main</span>
+      <div style="flex:1"></div>
+      <small>hi</small>
+    </header>
+
+    <section class="callout">
+      <h2 class="glitch" data-text="hi">hi</h2>
+      <p>am a twittr euser from israel.welcome to my littlw world &lt;3</p>
+
+      <div style="margin-top:8px;">
+        <span class="look-at-me">look at me:</span>
+        <div class="media">
+          <img src="grossdismemberment.jpg" id="img-1" alt="">
+        </div>
+      </div>
+
+      <p>i hate</p>
+
+      <!-- (trimmed long lists for brevity) -->
+      <ul class="simple-list"> <li>Turks</li> <li>Colombians</li> <li>Finns</li> <li>Kenyans</li> <li>Vietnamese</li> <li>Mexicans</li> <li>Puerto Ricans</li>  <li>Swedes</li> <li>Nigerians</li> <li>Australians</li> <li>Nepalese</li> <li>Poles</li> <li>Chileans</li> <li>Egyptians</li> <li>Romanians</li> <li>Cubans</li> <li>Argentines</li> <li>South Koreans</li> <li>Canadians</li> <li>Germans</li> <li>Qataris</li> <li>Tanzanians</li> <li>Belgians</li> <li>Saudis</li> <li>Mongolians</li> <li>Spaniards</li> <li>Iraqis</li> <li>Ethiopians</li> <li>Greeks</li> <li>Portuguese</li> <li>Russians</li> <li>Thais</li> <li>Venezuelans</li> <li>Britons</li> <li>Peruvians</li> <li>Japanese</li> <li>Brazilians</li> <li>Dutch</li> <li>Moroccans</li> <li>Swiss</li> <li>South Africans</li> <li>Serbs</li> <li>Malaysians</li> <li>Belarusians</li> <li>Hungarians</li> <li>Syrians</li> <li>Danes</li> <li>Bolivians</li> <li>Uzbeks</li> <li>Kazakhs</li> <li>Afghans</li> <li>Slovenes</li> <li>Paraguayans</li> <li>Cambodians</li> <li>Czechs</li> <li>Algerians</li> <li>Irish</li> <li>Rwandans</li> <li>Filipinos</li> <li>Haitians</li> <li>Ecuadorians</li> <li>Jordanians</li> <li>New Zealanders</li> <li>Austrians</li> <li>Bulgarians</li> <li>Somalis</li> <li>Croats</li> <li>Uruguayans</li> <li>Singaporeans</li> <li>Lebanese</li> <li>Georgians</li> <li>Estonians</li> <li>Bangladeshis</li> <li>Sudanese</li> <li>Yemenis</li> <li>Icelanders</li> <li>Dominicans</li> <li>Latvians</li> <li>Omanis</li> <li>Tunisians</li> <li>Libyans</li> <li>Armenians</li> <li>Angolans</li> <li>Papua New Guineans</li> <li>Sri Lankans</li> <li>Laotians</li> <li>Kyrgyz</li> <li>Zimbabweans</li> <li>Hondurans</li> <li>Salvadorans</li> <li>Guatemalans</li> <li>Nicaraguans</li> <li>Bahrainis</li> <li>Emiratis</li> <li>Malians</li> <li>Senegalese</li> <li>Ivorians</li> <li>Ghanaians</li> <li>Cameroonians</li> <li>Gabonese</li> <li>Congolese (DRC)</li> <li>Congolese (Republic)</li> <li>Zambians</li> <li>Botswanans</li> <li>Namibians</li> <li>Mozambicans</li> <li>Malawians</li> <li>Burkinabè</li> <li>Togolese</li> <li>Beninese</li> <li>Chadians</li> <li>Central Africans</li> <li>Mauritanians</li> <li>Tajiks</li> <li>Tibetans</li> <li>Kosovars</li> <li>Palestinians</li> <li>Andorrans</li> <li>Liechtensteiners</li> <li>Luxembourgers</li> <li>Monégasques</li> <li>Maltese</li> <li>Cypriots</li> <li>Bhutanese</li> <li>Bruneians</li> <li>East Timorese</li> <li>Fijians</li> <li>Samoans</li> <li>Tongans</li> <li>Malagasy</li> <li>Seychellois</li> <li>Mauritians</li> <li>Kuwaitis</li> <li>Azerbaijanis</li> <li>North Macedonians</li> <li>Albanians</li> <li>Bosnians</li> <li>Montenegrins</li> <li>Moldovans</li> <li>Basotho</li> <li>Swazis</li> <li>Eritreans</li> <li>Guineans</li> <li>Bissau-Guineans</li> <li>Sierra Leoneans</li> <li>Burundians</li> <li>Rwandans</li> <li>Jordanians</li> <li>Kuwaitis</li> <li>Bahrainis</li> </ul>
+
+      <p>i love:</p>
+      <ul class="simple-list"><li>Israelis</li></ul>
+
+      <p>i have zero rfriends except fro akmok if you want to see him ,here he is:</p>
+      <img src="redmist.jpg" id="img-2" style="margin-top:6px;" alt="">
+
+      <p style="margin-top:12px;">if you are a bad guy a pedophile or a killer that likes to kill people, well, i got this to say t oyou: <strong style="font-size:20px;">middle finger</strong></p>
+    </section>
+
+    <footer>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap">
+        <div>COPYRIGHT герп (SPELLED GERP TOO) 2025</div>
+        <small>hi</small>
+      </div>
+    </footer>
+  </div>
+
+  <div id="blood-cursor" aria-hidden="true"></div>
+
+<script>
+/*** CUSTOM CURSOR ***/
+document.addEventListener("mousemove", e => {
+  const c = document.getElementById("blood-cursor");
+  if (!c) return;
+  c.style.left = e.clientX + "px";
+  c.style.top = e.clientY + "px";
+});
+
+/*** NOISE SHADER (WebGL static) ***/
+(function() {
+  const canvas = document.getElementById("noiseCanvas");
+  if (!canvas) return;
+  const gl = canvas.getContext("webgl");
+  if (!gl) return; // gracefully skip if WebGL not supported
+
+  function resize() {
+    canvas.width = innerWidth;
+    canvas.height = innerHeight;
+    gl.viewport(0,0,gl.drawingBufferWidth,gl.drawingBufferHeight);
+  }
+  resize();
+  window.addEventListener("resize", resize);
+
+  const vertex = `
+  attribute vec2 a;
+  void main(){gl_Position=vec4(a,0.0,1.0);}
+  `;
+
+  const fragment = `
+  precision highp float;
+  uniform float t;
+  void main(){
+    float x = gl_FragCoord.x;
+    float y = gl_FragCoord.y;
+    float noise = fract(sin(dot(vec2(x,y+t*300.0), vec2(12.9898,78.233))) * 43758.5453);
+    gl_FragColor = vec4(vec3(noise), 1.0);
+  }
+  `;
+
+  function compile(type, src){
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){
+      console.warn("Shader compile error:", gl.getShaderInfoLog(s));
+    }
+    return s;
+  }
+  const vs = compile(gl.VERTEX_SHADER, vertex);
+  const fs = compile(gl.FRAGMENT_SHADER, fragment);
+
+  const program = gl.createProgram();
+  gl.attachShader(program, vs);
+  gl.attachShader(program, fs);
+  gl.linkProgram(program);
+  if(!gl.getProgramParameter(program, gl.LINK_STATUS)){
+    console.warn("Shader link error:", gl.getProgramInfoLog(program));
+    return;
+  }
+  gl.useProgram(program);
+
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    -1,-1, 1,-1, -1,1,
+    -1,1, 1,-1, 1,1
+  ]), gl.STATIC_DRAW);
+
+  const loc = gl.getAttribLocation(program, "a");
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+  const tLoc = gl.getUniformLocation(program, "t");
+
+  function render(time){
+    gl.uniform1f(tLoc, time * 0.001);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    requestAnimationFrame(render);
+  }
+  requestAnimationFrame(render);
+})();
+
+/*** REVEAL ANIMATION (defensive) ***/
+function reveal(img, delay){
+  if(!img) return;
+  img.style.opacity = 0;
+  img.style.transform = 'translateY(18px) rotate(-2deg) scale(.98)';
+  img.style.transition = 'opacity .9s ease-out, transform 1s cubic-bezier(.2,.9,.2,1)';
+  setTimeout(()=>{ img.style.opacity = 1; img.style.transform = 'translateY(0) rotate(0) scale(1)'; }, delay);
+}
+reveal(document.getElementById("img-1"), 250);
+reveal(document.getElementById("img-2"), 1200);
+
+/*** tiny random glitches ***/
+setInterval(()=>{
+  const nodes = document.querySelectorAll('h2.glitch, .look-at-me, .dir');
+  const n = nodes[Math.floor(Math.random()*nodes.length)];
+  if(!n) return;
+  const orig = n.style.transform || "";
+  n.style.transition = 'transform .12s ease';
+  n.style.transform = orig + ' translateX('+(Math.random()*6-3)+'px)';
+  setTimeout(()=> n.style.transform = orig, 120);
+}, 2000 + Math.random()*2200);
+</script>
+</body>
+</html>
